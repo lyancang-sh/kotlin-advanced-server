@@ -17,7 +17,7 @@ private fun log(msg: String) = println("[${Thread.currentThread().name}] $msg")
 fun main() {
     log("1")
 
-    runBlocking {
+    runBlocking(Dispatchers.Default) {
         log("run blocking first line")
         var a = async {
             //Continuation 1
