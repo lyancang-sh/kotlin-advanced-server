@@ -10,6 +10,7 @@ private fun log(msg: String) = println("[${Thread.currentThread().name}] $msg")
  * Runblocking, CoroutineDispatcher=BlockingEventLoop.queue(Continuation) for this case, 2 continuations in queue
  *
  */
+//jvm args: -Dkotlinx.coroutines.debug
 fun main() {
     log("1")
 
@@ -17,8 +18,8 @@ fun main() {
 
         var a = async {
             //Continuation 1
-            for (id in 0..100000000) {
-                if (id % 100000 == 0) {
+            for (id in 0..1000000) {
+                if (id % 1000000 == 0) {
                     if (isActive) log("a:$id")
                 }
             }
@@ -30,13 +31,25 @@ fun main() {
         var b = async {
             //Continuation 3
             for (id in 0..1000000) {
-                if (id % 100000 == 0) {
+                if (id % 1000000 == 0) {
                     if (isActive) log("b:$id")
                 }
             }
         }
 
-        println("run blocking end")
+        log("run blocking 1")
+
+        var c = async {
+            //Continuation 4
+            for (id in 0..1000000) {
+                if (id % 1000000 == 0) {
+                    if (isActive) log("c:$id")
+                }
+            }
+        }
+
+        log("run blocking last line")
 
     }
+    log("1-end")
 }
