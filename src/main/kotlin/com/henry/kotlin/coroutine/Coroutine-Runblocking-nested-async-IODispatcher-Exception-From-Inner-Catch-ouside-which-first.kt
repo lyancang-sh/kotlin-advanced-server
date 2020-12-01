@@ -15,9 +15,6 @@ import java.util.*
  */
 fun main() {
 
-    println(URLDecoder.decode("4Oe0UBaZbaSy7h/E%2BZnoJ4/uiJlLvIuBmdhoLAUXr4A%3D", "utf-8"))
-    println(URLEncoder.encode("4Oe0UBaZbaSy7h/E+ZnoJ4/uiJlLvIuBmdhoLAUXr4A=", "utf-8"))
-
     runBlocking {
         var child1: Deferred<Unit>? = null
         var child2: Deferred<Unit>? = null
