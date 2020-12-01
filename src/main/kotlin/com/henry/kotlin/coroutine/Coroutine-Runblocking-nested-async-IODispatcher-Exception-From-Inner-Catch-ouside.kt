@@ -33,34 +33,35 @@ fun main() {
     log("1")
 
     runBlocking(Dispatchers.Default) {
-//        try {//@0
-        log("run blocking first line")
+        try {
+            //@0
+            log("run blocking first line")
 
-        var a = async {
-            //Continuation 1
-            for (id in 0..1000000) {
-                if (id % 1000000 == 0) {
-                    if (isActive) log("a:$id")
+            var a = async {
+                //Continuation 1
+                for (id in 0..1000000) {
+                    if (id % 1000000 == 0) {
+                        if (isActive) log("a:$id")
+                    }
                 }
+                delay(100)
+                //Continuation 2
+                log("a:after delay")
             }
-            delay(100)
-            //Continuation 2
-            log("a:after delay")
-        }
 
-        var b = async {
-            //Continuation 3
-            for (id in 0..1000000) {
-                if (id % 1000000 == 0) {
-                    if (isActive) log("b:$id")
+            var b = async {
+                //Continuation 3
+                for (id in 0..1000000) {
+                    if (id % 1000000 == 0) {
+                        if (isActive) log("b:$id")
+                    }
                 }
-            }
-            //这样的代码在协程外部，没有意义，抓不住协程内部的exception,不管是不是自定义异常类。
-            //需要放到协程代码内部才行。比如在throw exception的方法上面加。
+                //这样的代码在协程外部，没有意义，抓不住协程内部的exception,不管是不是自定义异常类。
+                //需要放到协程代码内部才行。比如在throw exception的方法上面加。
 //            try { //@1
-            launch {
-                //Continuation 5
-                try { //@2
+                launch {
+                    //Continuation 5
+//                    try { //@2
                     for (id in 0..1000000) {
                         if (id % 1000000 == 0) {
                             if (isActive) log("b.1:$id")
@@ -69,45 +70,41 @@ fun main() {
                             }
                         }
                     }
-                } catch (ex: CustomEx) {
-                    log("had error inside inner try-catch:${ex.toString()}")
+//                } catch (ex: CustomEx) {
+//                    log("had error inside inner try-catch:${ex.toString()}")
+//                }
+                    "b"
                 }
-                "b"
-            }
 //            } catch (ex: CustomEx) {
 //                log("had error inside inner try-catch:${ex.toString()}")
 //            }
-            async {
-                //Continuation 5
+                async {
+                    //Continuation 5
+                    for (id in 0..1000000) {
+                        if (id % 1000000 == 0) {
+                            if (isActive) log("b.2:$id")
+                        }
+                    }
+                }
+                log("b.* done")
+            }
+
+            log("run blocking 1")
+
+            var c = async {
+                //Continuation 4
                 for (id in 0..1000000) {
-                    if (id % 1000000 == 0) {
-                        if (isActive) log("b.2:$id")
+                    if (id % 1000 == 0) {
+                        if (isActive) log("c:$id")
                     }
                 }
             }
-            log("b.* done")
+
+            log("run blocking last line")
+            println(b.await())//关键,必须await才能在此获得exception
+        } catch (ex: CustomEx) {
+            log("Caught:had error inside inner try-catch:${ex.toString()}")
         }
-
-        log("run blocking 1")
-
-        var c = async {
-            //Continuation 4
-            for (id in 0..1000000) {
-                if (id % 1000 == 0) {
-                    if (isActive) log("c:$id")
-                }
-            }
-        }
-
-        log("run blocking last line")
-//            println(b.await())
-//        } catch (ex: CustomEx) {
-//            log("Caught:had error inside inner try-catch:${ex.toString()}")
-//        }
     }
     log("1-end")
-}
-
-class CustomEx(message: String) : Exception(message) {
-
 }
