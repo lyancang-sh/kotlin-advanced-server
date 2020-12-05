@@ -3,7 +3,6 @@ package com.henry.kotlin.coroutine
 import kotlinx.coroutines.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.getOrSet
-import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
@@ -37,19 +36,19 @@ private fun log(msg: String) = println("[${Thread.currentThread().name}] $msg")
 fun main() {
     log("all start")
 
-    runBlocking(ThreadScopeAwareContext(initMap = mutableMapOf("name" to "henrylaing"))) {
+    runBlocking(MyRequestScope(initMap = mutableMapOf("name" to "lisi....."))) {
 
-        CoroutineScope(Dispatchers.IO + myContext()).async {
+        CoroutineScope(Dispatchers.IO + myScope()).async {
             log("job0 before delay get from threadcontext:${getMyContextValue("name")}")
-
-            val job1 = CoroutineScope(Dispatchers.IO + myContext()).launch {
+            val job1 = CoroutineScope(Dispatchers.IO + myScope()).launch {
                 log("job1 get from threadcontext:${getMyContextValue("name")}")
                 ThreadContext.put("age", "22")
                 throw Exception("job1.root failed")
             }
 
-            val job2 = CoroutineScope(Dispatchers.IO + myContext()).launch {
-//                log("job2 get from threadcontext:${ThreadContext.get("age")}")
+            val job2 = CoroutineScope(Dispatchers.IO + myScope()).launch {
+                putMyContext("age", "18")
+                log("job2 get from threadcontext:${getMyContextValue("age")}")
                 //Continuation 1
                 for (id in 0..1000000000) {
                     if (id % 1000000000 == 0) {
@@ -59,7 +58,7 @@ fun main() {
             }
 
             //NOTE: Didn't pass as context, so nothing will be there
-            val job3 = CoroutineScope(Dispatchers.IO + myContext()).launch {
+            val job3 = CoroutineScope(Dispatchers.IO + myScope()).launch {
                 log("job3 get from threadcontext:${getMyContextValue("name")}")
                 //Continuation 1
                 launch {
@@ -90,33 +89,34 @@ fun main() {
     log("all-end")
 }
 
-class ThreadScopeAwareContext(private val initMap: MutableMap<String, String>,
-                              var myThreadContext: MyThreadContext = MyThreadContext(initMap)
-) : ThreadContextElement<MyThreadContext>, AbstractCoroutineContextElement(ThreadScopeAwareContext) {
-    companion object Abc : CoroutineContext.Key<ThreadScopeAwareContext>
+class MyRequestScope(private val initMap: MutableMap<String, String>,
+                     var myContextMap: MyContextMap = MyContextMap(initMap),
+                     override val key: CoroutineContext.Key<*> = Abc
+) : ThreadContextElement<MyContextMap> {
+    companion object Abc : CoroutineContext.Key<MyRequestScope>
 
-    override fun restoreThreadContext(context: CoroutineContext, oldState: MyThreadContext) {
+    override fun restoreThreadContext(context: CoroutineContext, oldState: MyContextMap) {
         oldState.clear()
     }
 
-    override fun updateThreadContext(context: CoroutineContext): MyThreadContext {
-//        return MyThreadContext(mutableMapOf())
-        initMap?.entries.forEach { myThreadContext.put(it.key, it.value) }
-        return myThreadContext
+    //affects continuation.continue
+    override fun updateThreadContext(context: CoroutineContext): MyContextMap {
+        initMap?.entries.forEach { myContextMap.put(it.key, it.value) }
+        return myContextMap
     }
 
 
 }
 
-class MyThreadContext(var initMap: MutableMap<String, String>) {
-    var threadContext = ThreadLocal<ConcurrentHashMap<String, String>>()
+class MyContextMap(var initContextMap: MutableMap<String, String>) {
+    var threadLocalContext = ThreadLocal<ConcurrentHashMap<String, String>>()
 
     init {
-        initMap?.entries.forEach { put(it.key, it.value) }
+        initContextMap?.entries.forEach { put(it.key, it.value) }
     }
 
-    fun getContext(): ConcurrentHashMap<String, String> {
-        return threadContext.getOrSet { ConcurrentHashMap<String, String>() }
+    private fun getContext(): ConcurrentHashMap<String, String> {
+        return threadLocalContext.getOrSet { ConcurrentHashMap<String, String>() }
     }
 
     fun put(key: String, value: String) {
@@ -132,10 +132,14 @@ class MyThreadContext(var initMap: MutableMap<String, String>) {
     }
 }
 
-suspend fun myContext(): ThreadScopeAwareContext {
-    return coroutineContext[ThreadScopeAwareContext] ?: ThreadScopeAwareContext(mutableMapOf())
+suspend fun myScope(): MyRequestScope {
+    return coroutineContext[MyRequestScope] ?: MyRequestScope(mutableMapOf())
 }
 
 suspend fun getMyContextValue(key: String): String? {
-    return myContext().myThreadContext.get(key)
+    return myScope().myContextMap.get(key)
+}
+
+suspend fun putMyContext(key: String, value: String) {
+    myScope().myContextMap.put(key, value)
 }
