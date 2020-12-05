@@ -36,7 +36,7 @@ private fun log(msg: String) = println("[${Thread.currentThread().name}] $msg")
 fun main() {
     log("all start")
 
-    runBlocking(MyRequestScope(initMap = mutableMapOf("name" to "lisi....."))) {
+    runBlocking(MyRequestScope(mutableMapOf("name" to "lisi....."))) {
 
         CoroutineScope(Dispatchers.IO + myScope()).async {
             log("job0 before delay get from threadcontext:${getMyContextValue("name")}")
