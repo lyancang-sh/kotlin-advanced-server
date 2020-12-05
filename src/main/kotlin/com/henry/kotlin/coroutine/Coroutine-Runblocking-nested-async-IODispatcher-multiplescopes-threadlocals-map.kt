@@ -36,7 +36,7 @@ private fun log(msg: String) = println("[${Thread.currentThread().name}] $msg")
 fun main() {
     log("all start")
 
-    runBlocking(MyRequestScope(mutableMapOf("name" to "lisi....."))) {
+    runBlocking(MyRequestScope(mapOf("name" to "lisi....."))) {
 
         CoroutineScope(Dispatchers.IO + myScope()).async {
             log("job0 before delay get from threadcontext:${getMyContextValue("name")}")
@@ -89,7 +89,7 @@ fun main() {
     log("all-end")
 }
 
-class MyRequestScope(private val initMap: MutableMap<String, String>,
+class MyRequestScope(private val initMap: Map<String, String>,
                      var myContextMap: MyContextMap = MyContextMap(initMap),
                      override val key: CoroutineContext.Key<*> = Abc
 ) : ThreadContextElement<MyContextMap> {
@@ -108,7 +108,7 @@ class MyRequestScope(private val initMap: MutableMap<String, String>,
 
 }
 
-class MyContextMap(var initContextMap: MutableMap<String, String>) {
+class MyContextMap(var initContextMap: Map<String, String>) {
     var threadLocalContext = ThreadLocal<ConcurrentHashMap<String, String>>()
 
     init {
