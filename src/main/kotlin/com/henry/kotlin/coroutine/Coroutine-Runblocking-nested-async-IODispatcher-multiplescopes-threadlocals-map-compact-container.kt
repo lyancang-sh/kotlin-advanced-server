@@ -4,6 +4,7 @@ import kotlinx.coroutines.*
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.getOrSet
 import kotlin.concurrent.thread
+import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
@@ -42,44 +43,45 @@ fun main() {
     for (t in 0..1) {
         var t = thread(true) {
             log("thread starts $t")
-            runBlocking(SHRequestContext.scopeInit(mutableMapOf("name" to "someone else $t...."))) {
-                CoroutineScope(Dispatchers.IO + SHRequestContext.scopeCurrent()).async {
-                    log("${SHRequestContext.scopeCurrent().hashCode()} job0 before delay get from threadcontext:${SHRequestContext.get("name")}")
-                    val job1 = CoroutineScope(Dispatchers.IO + SHRequestContext.scopeCurrent()).launch {
-                        log("${SHRequestContext.scopeCurrent().hashCode()} job1 get from threadcontext:${SHRequestContext.get("name")}")
-                        SHRequestContext.put("name", "henryliang $t")
-                        if (Math.random() > 0.5) throw Exception("${SHRequestContext.scopeCurrent().hashCode()} job1 running into error")
+            runBlocking(SHRequestContext2(mutableMapOf("name" to "someone else $t...."))) {
+                CoroutineScope(Dispatchers.IO + SHRequestContext2.scopeCurrent()).async {
+                    log("${SHRequestContext2.scopeCurrent().hashCode()} job0 before delay get from threadcontext:${SHRequestContext2.get("name")}")
+                    val job1 = CoroutineScope(Dispatchers.IO + SHRequestContext2.scopeCurrent()).launch {
+                        log("${SHRequestContext2.scopeCurrent().hashCode()} job1 get from threadcontext:${SHRequestContext2.get("name")}")
+                        SHRequestContext2.put("name", "henryliang $t")
+                        if (Math.random() > 0.5) throw Exception("${SHRequestContext2.scopeCurrent().hashCode()} job1 running into error")
                     }
 
-                    val job2 = CoroutineScope(Dispatchers.IO + SHRequestContext.scopeCurrent(mutableMapOf("age" to "88"))).launch {
-                        log("${SHRequestContext.scopeCurrent().hashCode()} job2 get from threadcontext age=:${SHRequestContext.get("age")}")
+                    val job2 = CoroutineScope(Dispatchers.IO + SHRequestContext2.scopeCurrent(mutableMapOf("age" to "88"))).launch {
+                        log("${SHRequestContext2.scopeCurrent().hashCode()} job2 get from threadcontext age=:${SHRequestContext2.get("age")}")
                         //Continuation 1
                         for (id in 0..1000000000) {
                             if (id % 1000000000 == 0) {
-                                if (isActive) log("${SHRequestContext.scopeCurrent().hashCode()} job2.root:$id")
+                                if (isActive) log("${SHRequestContext2.scopeCurrent().hashCode()} job2.root:$id")
                             }
                         }
                     }
 
                     //NOTE: Didn't pass as context, so nothing will be there
-                    val job3 = CoroutineScope(Dispatchers.IO + SHRequestContext.scopeCurrent()).launch {
-                        SHRequestContext.put("gender", "male")
-                        log("${SHRequestContext.scopeCurrent().hashCode()} job3 get from threadcontext:${SHRequestContext.get("name")}")
-                        log("${SHRequestContext.scopeCurrent().hashCode()} job3 get from threadcontext:gender=${SHRequestContext.get("gender")}")
+                    val job3 = CoroutineScope(Dispatchers.IO + SHRequestContext2.scopeCurrent()).launch {
+                        SHRequestContext2.put("gender", "male")
+                        log("${SHRequestContext2.scopeCurrent().hashCode()} job3 get from threadcontext:${SHRequestContext2.get("name")}")
+                        log("${SHRequestContext2.scopeCurrent().hashCode()} job3 get from threadcontext:gender=${SHRequestContext2.get("gender")}")
+                        SHRequestContext2.put("name", "henryliang33333 $t")
                         //Continuation 1
                         launch {
                             for (id in 0..1000000) {
                                 if (id % 1000000 == 0) {
-                                    if (isActive) log("job3.a:$id")
+                                    if (isActive) log("${SHRequestContext2.scopeCurrent().hashCode()} job3.a:$id")
                                 }
                             }
-                            log("${SHRequestContext.scopeCurrent().hashCode()} job3.a get from threadcontext:${SHRequestContext.get("name")}")
-                            throw  Exception("${SHRequestContext.scopeCurrent().hashCode()} job3.a had error")
+                            log("${SHRequestContext2.scopeCurrent().hashCode()} job3.a get from threadcontext:${SHRequestContext2.get("name")}")
+                            throw  Exception("${SHRequestContext2.scopeCurrent().hashCode()} job3.a had error")
                         }
                         launch {
                             for (id in 0..100000000) {
                                 if (id % 100000 == 0) {
-                                    if (isActive) log("${SHRequestContext.scopeCurrent().hashCode()} job3.b:$id")
+                                    if (isActive) log("${SHRequestContext2.scopeCurrent().hashCode()} job3.b:$id")
                                 }
                             }
                         }
@@ -87,7 +89,7 @@ fun main() {
 
                     delay(1000)
 
-                    log("job0 after delay get from threadcontext:${SHRequestContext.get("name")}")
+                    log("${SHRequestContext2.scopeCurrent().hashCode()} job0 after delay get from threadcontext:${SHRequestContext2.get("name")}")
 
                 }
             }
@@ -97,4 +99,59 @@ fun main() {
 
     Thread.sleep(20000)
     log("all-end")
+}
+
+class SHRequestContext2(
+        initMap: MutableMap<String, String?> = mutableMapOf()
+) : ThreadContextElement<MutableMap<String, String?>>, AbstractCoroutineContextElement(ScopeKey) {
+    private var _ctxMap: MutableMap<String, String?> = mutableMapOf()//copy this value to threads if thread switched
+    private var threadLocalContext = ThreadLocal<MutableMap<String, String?>>()
+
+    //Util funtions to access context map
+    companion object ScopeKey : CoroutineContext.Key<SHRequestContext2> {
+        suspend fun scopeCurrent(paramsMap: MutableMap<String, String?> = mutableMapOf()): SHRequestContext2 {
+            var sscope = coroutineContext[SHRequestContext2]?.let { it }
+                    ?: throw Exception("No [${SHRequestContext2.javaClass}] being init in parent coroutine scope! call[ SHRequestContext2.scopeInit() ]first")
+            return sscope.also {
+                sscope._ctxMap.putAll(paramsMap)
+                sscope.threadLocalContext().putAll(paramsMap)
+            }
+        }
+
+        suspend fun get(key: String): String? {
+            return coroutineContext[SHRequestContext2]?.let { it.threadLocalContext()[key] }
+                    ?: throw Exception("No scope being init!")
+        }
+
+        suspend fun put(key: String, value: String?) {
+            coroutineContext[SHRequestContext2]?.let {
+                it._ctxMap[key] = value
+                it.threadLocalContext()[key] = value
+            } ?: throw Exception("No scope being init!")
+
+        }
+    }
+
+    //Quite continuation
+    override fun restoreThreadContext(context: CoroutineContext, oldState: MutableMap<String, String?>) {
+        oldState.clear()
+    }
+
+    //Enter continuation (possible thread switch)
+    override fun updateThreadContext(context: CoroutineContext): MutableMap<String, String?> {
+        return threadLocalContext().also { it.putAll(context[SHRequestContext2]!!._ctxMap) }
+    }
+
+    private fun threadLocalContext(): MutableMap<String, String?> {
+        return threadLocalContext.getOrSet { mutableMapOf() }
+    }
+
+    private fun clear() {
+        threadLocalContext().clear()
+    }
+
+    init {
+        _ctxMap = initMap
+        threadLocalContext().putAll(initMap)
+    }
 }
