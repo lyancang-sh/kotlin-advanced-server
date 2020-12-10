@@ -5,7 +5,7 @@ import org.springframework.web.client.RestTemplate
 
 /*
 Coroutine: 坑?
-不太好重现
+注意asyncd的异常catch点，出异常马上返回还是出异常等所有coroutine完成再返回
  */
 fun main() {
 
@@ -35,8 +35,7 @@ fun main() {
 
             }
             delay(100)
-//            print("result: ${parent.await()}")//Flip 1, capture child1 exception->wait for child2 done->return child1 exception
-            log("result: ${child1!!.await()} , ${child2!!.await()}") //Flip2, capture child1 exception->return child1 exception->child2 run in backend till done
+            log("result: ${child1!!.await()} , ${child2!!.await()}")
         } catch (ex: Exception) {
             ex.printStackTrace()
         }

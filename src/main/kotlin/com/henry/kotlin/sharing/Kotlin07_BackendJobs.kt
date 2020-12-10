@@ -5,7 +5,7 @@ import org.springframework.web.client.RestTemplate
 
 /*
 Coroutine: 坑?
-注意launch的用法
+注意launch的用法,一个出异常，所有的都会回滚。CoroutineScope的概念。
  */
 fun main() {
 
@@ -29,7 +29,6 @@ fun main() {
                 delay(100)
                 log("job4 done")
             }
-
         }
 
         delay(1000)

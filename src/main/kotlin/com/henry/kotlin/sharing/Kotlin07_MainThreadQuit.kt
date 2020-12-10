@@ -5,11 +5,10 @@ import org.springframework.web.client.RestTemplate
 
 /*
 Coroutine: 坑?
-不太好重现
+注意 await()的必要性
  */
 fun main() {
     runBlocking<Unit> {
-
         var parent = CoroutineScope(Dispatchers.IO).async {
             async {
                 delay(100)
