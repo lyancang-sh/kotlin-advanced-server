@@ -30,6 +30,7 @@ fun main() {
                     for (int in 0..100000000) {
                         if (int % 10000000 == 0) log(Thread.currentThread().name + "async2 $int")
                     }
+                    
                     log("async2 ended")
                 }
 

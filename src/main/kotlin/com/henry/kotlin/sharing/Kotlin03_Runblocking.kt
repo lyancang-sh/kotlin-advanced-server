@@ -10,21 +10,23 @@ launch:返回Job,使用job.join()显示等待结束。也可以cancel().
 async:返回Deferred,使用deffered.await()等待结果
 
  */
-fun main() = runBlocking { // this: CoroutineScope
+fun main() = runBlocking(Dispatchers.IO) { // this: CoroutineScope
     launch {
         delay(200L)
-        println("Task from runBlocking")
+        log("1 Task from runBlocking")
     }
 
     coroutineScope { // Creates a coroutine scope
         launch {
-            delay(500L)
-            println("Task from nested launch")
+            delay(100L)
+            log("2 Task from nested launch")
         }
 
         delay(100L)
-        println("Task from coroutine scope") // This line will be printed before the nested launch
+        log("3 Task from coroutine scope") // This line will be printed before the nested launch
     }
-
-    println("Coroutine scope is over") // This line is not printed until the nested launch completes
+    log("4 Coroutine scope is over ") // This line is not printed until the nested launch completes
 }
+
+//4312
+//

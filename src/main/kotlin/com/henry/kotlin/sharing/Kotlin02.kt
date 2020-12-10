@@ -12,11 +12,12 @@ fun main() {
     GlobalScope.async {
 
         var job1 = async {
-            throw Exception("oops")
+            delay(50)
             log("line 13")
         }
 
         var job2 = async {
+            throw Exception("oops")
             log("line 17")
         }
 

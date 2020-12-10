@@ -12,6 +12,7 @@ fun main() {
     runBlocking<Unit> {
 
         CoroutineScope(Dispatchers.IO).launch {
+            supervisorScope {  }
             launch {
                 delay(100)
                 log("job1 done")
