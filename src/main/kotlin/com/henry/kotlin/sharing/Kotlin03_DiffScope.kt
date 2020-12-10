@@ -12,8 +12,8 @@ async:返回Deferred,使用deffered.await()等待结果
  */
 fun main() = runBlocking<Unit> {
     log("line 13")
-    
-    GlobalScope.async {
+
+    GlobalScope.async {//GlobalScope Like daemon threads,not blocking process
         log("line 16")
         delay(200)
         log("line 18")
