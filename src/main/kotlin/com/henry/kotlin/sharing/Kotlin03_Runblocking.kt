@@ -11,6 +11,7 @@ async:返回Deferred,使用deffered.await()等待结果
 
  */
 fun main() = runBlocking(Dispatchers.IO) { // this: CoroutineScope
+
     launch {
         delay(200L)
         log("1 Task from runBlocking")
@@ -18,7 +19,7 @@ fun main() = runBlocking(Dispatchers.IO) { // this: CoroutineScope
 
     coroutineScope { // Creates a coroutine scope
         launch {
-            delay(100L)
+            delay(500L)
             log("2 Task from nested launch")
         }
 
